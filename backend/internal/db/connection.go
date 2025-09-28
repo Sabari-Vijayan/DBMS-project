@@ -1,11 +1,11 @@
 package db
 
-import {
+import (
 	"context"
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-}
+)
 
 func Connect()(*pgxpool.Pool, error) {
   //Get database URL from environment

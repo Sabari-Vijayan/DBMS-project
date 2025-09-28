@@ -1,6 +1,6 @@
 package main
 
-import{
+import(
 	"log"
 	"net/http"
 	"os"
@@ -8,7 +8,7 @@ import{
   "github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/Sabari-Vijayan/DBMS-project/internal/db"
-}
+)
 
 func main() {
 
@@ -42,6 +42,6 @@ func main() {
 	}
 
 	log.Printf("Server starting on port %s",port)
-	router.Run(";"+port)
+	router.Run(":"+port)
 
 }
