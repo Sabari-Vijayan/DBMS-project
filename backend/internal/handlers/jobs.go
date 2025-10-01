@@ -7,6 +7,7 @@ import (
     "time"
     "github.com/gin-gonic/gin"
     "github.com/jackc/pgx/v5/pgxpool"
+		//"strconv"
 )
 
 type JobHandler struct {
@@ -45,7 +46,7 @@ func (h *JobHandler) CreateJob(c *gin.Context) {
         return
     }*/
 		// Use employer_id from request
-employerID := req.EmployerID
+employerID := 9
 
 // Verify the user is an employer
 var userType string

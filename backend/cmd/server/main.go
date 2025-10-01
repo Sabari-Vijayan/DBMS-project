@@ -29,6 +29,7 @@ func main() {
 	authHandler := &handlers.AuthHandler{DB: database}
   profileHandler := &handlers.ProfileHandler{DB: database}
 	jobHandler := &handlers.JobHandler{DB: database}
+  applicationHandler := &handlers.ApplicationHandler{DB: database}
 
 	//CREATING Gin router
 	router:=gin.Default()
@@ -58,6 +59,12 @@ func main() {
 	router.POST("/api/jobs", jobHandler.CreateJob)
   router.GET("/api/jobs", jobHandler.GetJobs)
   router.GET("/api/jobs/:id", jobHandler.GetJob)
+
+	// Application routes - Add these
+  router.POST("/api/applications", applicationHandler.ApplyToJob)
+  router.GET("/api/applications/worker/:workerId", applicationHandler.GetWorkerApplications)
+  router.GET("/api/applications/job/:jobId", applicationHandler.GetJobApplications)
+  router.PUT("/api/applications/:id", applicationHandler.UpdateApplicationStatus)
 
 	//Get port from environment or default to 8080
 	port := os.Getenv("PORT")
