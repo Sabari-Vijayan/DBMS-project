@@ -6,7 +6,7 @@ function Register() {
     email: '',
     password: '',
     full_name: '',
-    user_type: 'customer',
+    user_type: 'worker',
     phone: '',
     location: '',
   });
@@ -34,7 +34,7 @@ function Register() {
         email: '',
         password: '',
         full_name: '',
-        user_type: 'customer',
+        user_type: 'worker',
         phone: '',
         location: '',
       });
@@ -92,9 +92,8 @@ function Register() {
             onChange={handleChange}
             required
           >
-            <option value="customer">Customer</option>
-            <option value="handyman">Handyman</option>
-            <option value="shopkeeper">Shopkeeper</option>
+            <option value="worker">worker</option>
+            <option value="employer">employer</option>
           </select>
         </div>
 
