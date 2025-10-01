@@ -27,7 +27,8 @@ func main() {
 
   //CREATE handlers
 	authHandler := &handlers.AuthHandler{DB: database}
-  profileHandler := &handlers.ProfileHandler{DB: database}  // Add this
+  profileHandler := &handlers.ProfileHandler{DB: database}
+	jobHandler := &handlers.JobHandler{DB: database}
 
 	//CREATING Gin router
 	router:=gin.Default()
@@ -52,6 +53,11 @@ func main() {
   //Profile routes
 	router.GET("api/profile/:id", profileHandler.GetProfile)
 	router.PUT("api/profile/:id", profileHandler.UpdateProfile)
+
+	//Job routes
+	router.POST("/api/jobs", jobHandler.CreateJob)
+  router.GET("/api/jobs", jobHandler.GetJobs)
+  router.GET("/api/jobs/:id", jobHandler.GetJob)
 
 	//Get port from environment or default to 8080
 	port := os.Getenv("PORT")

@@ -20,4 +20,11 @@ export const profileAPI = {
   updateProfile: (userId, data) => api.put(`/profile/&{userId}`, data),
 };
 
+//Job listing 
+export const jobAPI = {
+  createJob: (jobData) => api.post('/jobs', jobData),
+  getAllJobs: () => api.get('/jobs'),
+  getJob: (jobId) => api.get(`/jobs/${jobId}`),
+};
+
 export default api;
