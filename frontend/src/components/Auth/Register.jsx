@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { authAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -12,6 +12,9 @@ function Register() {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  
+  const { register } = useAuth();
 
   const handleChange = (e) => {
     setFormData({
@@ -24,11 +27,14 @@ function Register() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setLoading(true);
 
-    try {
-      const response = await authAPI.register(formData);
+    const result = await register(formData);
+    
+    setLoading(false);
+    
+    if (result.success) {
       setSuccess('Registration successful! You can now login.');
-      console.log('User registered:', response.data);
       // Reset form
       setFormData({
         email: '',
@@ -38,8 +44,8 @@ function Register() {
         phone: '',
         location: '',
       });
-    } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed');
+    } else {
+      setError(result.error);
     }
   };
 
@@ -92,8 +98,8 @@ function Register() {
             onChange={handleChange}
             required
           >
-            <option value="worker">worker</option>
-            <option value="employer">employer</option>
+            <option value="worker">Worker</option>
+            <option value="employer">Employer</option>
           </select>
         </div>
 
@@ -117,7 +123,9 @@ function Register() {
           />
         </div>
 
-        <button type="submit">Register</button>
+        <button type="submit" disabled={loading}>
+          {loading ? 'Registering...' : 'Register'}
+        </button>
       </form>
     </div>
   );

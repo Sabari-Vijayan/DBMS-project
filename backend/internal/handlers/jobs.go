@@ -15,7 +15,7 @@ type JobHandler struct {
 }
 
 type CreateJobRequest struct {
-    EmployerID   int      `json:"employer_id" binding:"required"` // Add this line
+    //EmployerID   int      `json:"employer_id" binding:"required"` // Add this line
 	  Title        string   `json:"title" binding:"required"`
     Description  string   `json:"description" binding:"required"`
     CategoryID   *int     `json:"category_id"`
@@ -31,14 +31,21 @@ type CreateJobRequest struct {
 
 // Create new job posting
 func (h *JobHandler) CreateJob(c *gin.Context) {
+
+    employerID, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authorized"})
+			return
+		}
+
     var req CreateJobRequest
     if err := c.ShouldBindJSON(&req); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
         return
     }
 
-    // TODO: Get employer ID from JWT token
-    // For now, we'll accept it from request or use a default
+    // Get employer ID from JWT token
+    
     /* employerID := c.GetInt("user_id") // We'll implement this with JWT later
     if employerID == 0 {
         // Temporary: accept from query param for testing
@@ -46,7 +53,7 @@ func (h *JobHandler) CreateJob(c *gin.Context) {
         return
     }*/
 		// Use employer_id from request
-employerID := 9
+empID := employerID.(int)
 
 // Verify the user is an employer
 var userType string
@@ -97,7 +104,7 @@ if userType != "employer" {
     }
 
     err = h.DB.QueryRow(context.Background(), query,
-        employerID, req.Title, req.Description, req.CategoryID, req.Location,
+        empID, req.Title, req.Description, req.CategoryID, req.Location,
         req.SalaryMin, req.SalaryMax, req.Duration, req.Requirements,
         req.ContactPhone, req.ContactEmail, expiresAt,
     ).Scan(

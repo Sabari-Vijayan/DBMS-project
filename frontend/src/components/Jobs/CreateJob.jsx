@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { jobAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import './Jobs.css';
 
-function CreateJob({ employerId }) {
+function CreateJob() {
+  const { user } = useAuth();
+  
   const [formData, setFormData] = useState({
-    employer_id: employerId,
+    // Remove employer_id - comes from JWT now
     title: '',
     description: '',
     category_id: '',
@@ -50,7 +53,7 @@ function CreateJob({ employerId }) {
     setSuccess('');
 
     try {
-      // Prepare data - convert empty strings to null for optional fields
+      // Prepare data - JWT will provide employer_id
       const jobData = {
         ...formData,
         category_id: formData.category_id ? Number(formData.category_id) : null,
@@ -68,7 +71,6 @@ function CreateJob({ employerId }) {
       
       // Reset form
       setFormData({
-        employer_id: employerId,
         title: '',
         description: '',
         category_id: '',
@@ -87,6 +89,10 @@ function CreateJob({ employerId }) {
     }
   };
 
+  if (!user || user.user_type !== 'employer') {
+    return <div className="error">Only employers can post jobs</div>;
+  }
+
   return (
     <div className="create-job-container">
       <h2>Post a New Job</h2>
@@ -94,6 +100,7 @@ function CreateJob({ employerId }) {
       {success && <div className="success">{success}</div>}
 
       <form onSubmit={handleSubmit} className="job-form">
+        {/* Rest of the form stays the same */}
         <div className="form-group">
           <label>Job Title *</label>
           <input

@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
-import { jobAPI } from '../../services/api';
+import { jobAPI, applicationAPI } from '../../services/api';
 import './Jobs.css';
+import { useAuth } from '../../context/AuthContext';
 
-function JobList() {
+function JobList({ workerId }) {
+  const { user } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedJob, setSelectedJob] = useState(null);
+  const [showApplicationForm, setShowApplicationForm] = useState(false);
+  const [coverLetter, setCoverLetter] = useState('');
+  const [applicationMessage, setApplicationMessage] = useState('');
 
   useEffect(() => {
     fetchJobs();
@@ -25,10 +30,44 @@ function JobList() {
 
   const viewJobDetails = (job) => {
     setSelectedJob(job);
+    setShowApplicationForm(false);
+    setApplicationMessage('');
   };
 
   const closeJobDetails = () => {
     setSelectedJob(null);
+    setShowApplicationForm(false);
+    setCoverLetter('');
+    setApplicationMessage('');
+  };
+
+  const handleApply = () => {
+    setShowApplicationForm(true);
+  };
+
+  const submitApplication = async () => {
+    if (!workerId) {
+      setApplicationMessage('Please login as a worker to apply');
+      return;
+    }
+
+    try {
+      await applicationAPI.applyToJob({
+        job_id: selectedJob.id,
+        //worker_id: workerId,
+        cover_letter: coverLetter,
+      });
+      setApplicationMessage('Application submitted successfully!');
+      setCoverLetter('');
+      setShowApplicationForm(false);
+      
+      // Refresh to show updated status
+      setTimeout(() => {
+        setApplicationMessage('');
+      }, 3000);
+    } catch (err) {
+      setApplicationMessage(err.response?.data?.error || 'Failed to submit application');
+    }
   };
 
   if (loading) return <div>Loading jobs...</div>;
@@ -58,7 +97,7 @@ function JobList() {
                 Expires: {new Date(job.expires_at).toLocaleDateString()}
               </p>
               <button onClick={() => viewJobDetails(job)} className="view-btn">
-                View Details
+                View Details & Apply
               </button>
             </div>
           ))}
@@ -100,7 +139,37 @@ function JobList() {
             <p className="expires-detail">
               <strong>Expires:</strong> {new Date(selectedJob.expires_at).toLocaleString()}
             </p>
-            <button className="apply-btn">Apply for this Job</button>
+
+            {applicationMessage && (
+              <div className={applicationMessage.includes('success') ? 'success' : 'error'}>
+                {applicationMessage}
+              </div>
+            )}
+
+            {!showApplicationForm ? (
+              <button className="apply-btn" onClick={handleApply}>
+                Apply for this Job
+              </button>
+            ) : (
+              <div className="application-form">
+                <h3>Submit Your Application</h3>
+                <textarea
+                  value={coverLetter}
+                  onChange={(e) => setCoverLetter(e.target.value)}
+                  placeholder="Tell the employer why you're a great fit for this job..."
+                  rows="5"
+                  className="cover-letter-input"
+                />
+                <div className="button-group">
+                  <button onClick={submitApplication} className="submit-application-btn">
+                    Submit Application
+                  </button>
+                  <button onClick={() => setShowApplicationForm(false)} className="cancel-btn">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

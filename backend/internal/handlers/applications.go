@@ -7,6 +7,7 @@ import (
     "time"
     "github.com/gin-gonic/gin"
     "github.com/jackc/pgx/v5/pgxpool"
+		"strings"
 )
 
 type ApplicationHandler struct {
@@ -15,7 +16,6 @@ type ApplicationHandler struct {
 
 type CreateApplicationRequest struct {
     JobID       int    `json:"job_id" binding:"required"`
-    WorkerID    int    `json:"worker_id" binding:"required"`
     CoverLetter string `json:"cover_letter"`
 }
 
@@ -24,7 +24,14 @@ type UpdateApplicationRequest struct {
 }
 
 // Worker applies to a job
-func (h *ApplicationHandler) ApplyToJob(c *gin.Context) {
+/*func (h *ApplicationHandler) ApplyToJob(c *gin.Context) {
+
+    workerID, exists := c.Get("user_id")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+        return
+    }
+
     var req CreateApplicationRequest
     if err := c.ShouldBindJSON(&req); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -35,16 +42,9 @@ func (h *ApplicationHandler) ApplyToJob(c *gin.Context) {
     var userType string
     checkQuery := `SELECT user_type FROM users WHERE id = $1`
     err := h.DB.QueryRow(context.Background(), checkQuery, req.WorkerID).Scan(&userType)
+
+		workID := workerID.(int)
     
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid worker ID"})
-        return
-    }
-    
-    if userType != "worker" {
-        c.JSON(http.StatusForbidden, gin.H{"error": "Only workers can apply to jobs"})
-        return
-    }
 
     // Check if job exists and is still open
     var jobStatus string
@@ -84,7 +84,7 @@ func (h *ApplicationHandler) ApplyToJob(c *gin.Context) {
     }
 
     err = h.DB.QueryRow(context.Background(), query,
-        req.JobID, req.WorkerID, req.CoverLetter,
+        req.JobID, workID, req.CoverLetter,
     ).Scan(
         &application.ID,
         &application.JobID,
@@ -97,6 +97,86 @@ func (h *ApplicationHandler) ApplyToJob(c *gin.Context) {
     if err != nil {
         // Check if it's a duplicate application error
         if err.Error() == "ERROR: duplicate key value violates unique constraint \"applications_job_id_worker_id_key\" (SQLSTATE 23505)" {
+            c.JSON(http.StatusConflict, gin.H{"error": "You have already applied to this job"})
+            return
+        }
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to submit application", "details": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusCreated, gin.H{
+        "message": "Application submitted successfully",
+        "application": application,
+    })
+}*/
+
+// Worker applies to a job
+func (h *ApplicationHandler) ApplyToJob(c *gin.Context) {
+    // Get worker ID from JWT token
+    workerID, exists := c.Get("user_id")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+        return
+    }
+
+    var req CreateApplicationRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    workID := workerID.(int)
+
+    // Check if job exists and is still open
+    var jobStatus string
+    var expiresAt time.Time
+    jobQuery := `SELECT status, expires_at FROM jobs WHERE id = $1`
+    err := h.DB.QueryRow(context.Background(), jobQuery, req.JobID).Scan(&jobStatus, &expiresAt)
+    
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Job not found"})
+        return
+    }
+
+    if jobStatus != "open" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "This job is no longer accepting applications"})
+        return
+    }
+
+    if expiresAt.Before(time.Now()) {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "This job has expired"})
+        return
+    }
+
+    // Create application
+    query := `
+        INSERT INTO applications (job_id, worker_id, cover_letter)
+        VALUES ($1, $2, $3)
+        RETURNING id, job_id, worker_id, cover_letter, status, applied_at
+    `
+
+    var application struct {
+        ID          int
+        JobID       int
+        WorkerID    int
+        CoverLetter sql.NullString
+        Status      string
+        AppliedAt   time.Time
+    }
+
+    err = h.DB.QueryRow(context.Background(), query,
+        req.JobID, workID, req.CoverLetter,
+    ).Scan(
+        &application.ID,
+        &application.JobID,
+        &application.WorkerID,
+        &application.CoverLetter,
+        &application.Status,
+        &application.AppliedAt,
+    )
+
+    if err != nil {
+        if strings.Contains(err.Error(), "duplicate key") {
             c.JSON(http.StatusConflict, gin.H{"error": "You have already applied to this job"})
             return
         }
