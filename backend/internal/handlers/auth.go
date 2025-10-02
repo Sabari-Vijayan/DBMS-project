@@ -7,6 +7,7 @@ import (
     "golang.org/x/crypto/bcrypt"
     "github.com/gin-gonic/gin"
     "github.com/jackc/pgx/v5/pgxpool"
+		"github.com/Sabari-Vijayan/DBMS-project/internal/auth"
 )
 
 type AuthHandler struct {
@@ -120,9 +121,17 @@ func (h *AuthHandler) Login(c *gin.Context) {
         return
     }
 
+		// Generate JWT token
+    token, err := auth.GenerateToken(user.ID, user.Email, user.UserType)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+        return
+    }
+
     // Success! Return user data (we'll add JWT token later)
     c.JSON(http.StatusOK, gin.H{
         "message": "Login successful",
+				"token":   token,
         "user": gin.H{
             "id":        user.ID,
             "email":     user.Email,

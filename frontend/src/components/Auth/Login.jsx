@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { authAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -7,6 +7,9 @@ function Login() {
     password: '',
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  
+  const { login } = useAuth();
 
   const handleChange = (e) => {
     setFormData({
@@ -18,14 +21,17 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
-    try {
-      const response = await authAPI.login(formData);
-      console.log('Login successful:', response.data);
-      // TODO: Store user data and redirect to dashboard
-      alert('Login successful! Welcome ' + response.data.user.full_name);
-    } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+    const result = await login(formData.email, formData.password);
+    
+    setLoading(false);
+    
+    if (result.success) {
+      // Success - AuthContext will handle the redirect
+      alert('Login successful!');
+    } else {
+      setError(result.error);
     }
   };
 
@@ -57,7 +63,9 @@ function Login() {
           />
         </div>
 
-        <button type="submit">Login</button>
+        <button type="submit" disabled={loading}>
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
       </form>
     </div>
   );
